@@ -33,6 +33,11 @@
 
         h1 { margin: 0; font-size: 1.4rem; color: var(--rutgers-red); letter-spacing: -0.5px; }
         p { margin: 0; font-size: 0.85rem; color: var(--dark-grey); font-weight: bold; }
+        
+        /* Inspiration Subtitle */
+        .inspiration-text { margin-top: 4px; font-size: 0.75rem; color: var(--dark-grey); font-weight: normal; }
+        .inspiration-text a { color: var(--rutgers-red); text-decoration: none; font-weight: bold; }
+        .inspiration-text a:hover { text-decoration: underline; }
 
         /* Popup Styling */
         .leaflet-popup-content-wrapper { border-radius: 12px; padding: 5px; }
@@ -68,8 +73,9 @@
 <body>
 
     <div class="overlay">
-        <h1>🌈 Queering the Banks</h1>
+        <h1>Queering the Banks</h1>
         <p>A Map of Rutgers Queer Joy</p>
+        <p class="inspiration-text">Based on <a href="https://www.queeringthemap.com/" target="_blank">Queering The Map</a></p>
         
         <div style="margin-top: 12px; display: flex; gap: 5px;">
             <input type="text" id="searchInput" placeholder="Search building (e.g. casc, scott)..." 
@@ -122,13 +128,14 @@
                     <strong style="color:#cc0033">✨ Share a Moment of Joy</strong>
                     <select id="emojiInput" style="width:100%; margin-top:8px; padding:5px; border-radius:5px; border: 1px solid #ccc;">
                         <option value="❤️">❤️ Love</option>
-                        <option value="🏳️‍🌈">🏳️‍🌈 Pride</option>
-                        <option value="✨">✨ Magic</option>
-                        <option value="🌈">🌈 Rainbow</option>
-                        <option value="🌸">🌸 Soft Joy</option>
-                        <option value="💫">💫 Sparkle</option>
+                        <option value="🧡">🧡 Funny</option>
+                        <option value="💛">💛 Heartwarming</option>
+                        <option value="💚">💚 Gay Crisis</option>
+                        <option value="🩵">🩵 Advocacy/Social Justice</option>
+                        <option value="💙">💙 Allyship</option>
+                        <option value="💜">💜 Community</option>
                     </select>
-                    <textarea id="storyInput" placeholder="What happened here? (e.g., found community, first date...)"></textarea>
+                    <textarea id="storyInput" placeholder="What moment of queer joy happened here? (e.g., first kiss, joined community event, etc...)"></textarea>
                     <button class="save-btn" onclick="savePin(${lat}, ${lng})">Add to the Map</button>
                 </div>
             `;

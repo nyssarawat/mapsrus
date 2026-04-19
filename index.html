@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queering the Banks | Rutgers New Brunswick</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        :root {
+            --rutgers-red: #cc0033;
+            --dark-grey: #5f6a72;
+            --rainbow-gradient: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
+        }
+
+        body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; overflow: hidden; }
+        #map { height: 100vh; width: 100vw; z-index: 1; }
+        
+        /* Header Overlay */
+        .overlay {
+            position: absolute;
+            top: 20px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            text-align: center;
+            border: 3px solid var(--rutgers-red);
+            min-width: 280px;
+        }
+
+        h1 { margin: 0; font-size: 1.4rem; color: var(--rutgers-red); letter-spacing: -0.5px; }
+        p { margin: 0; font-size: 0.85rem; color: var(--dark-grey); font-weight: bold; }
+
+        /* Popup Styling */
+        .leaflet-popup-content-wrapper { border-radius: 12px; padding: 5px; }
+        .leaflet-popup-content { font-size: 14px; line-height: 1.4; width: 220px !important; }
+        
+        textarea { 
+            width: 100%; height: 80px; margin-top: 10px; 
+            border: 1px solid #ddd; border-radius: 8px; 
+            padding: 8px; box-sizing: border-box; font-family: inherit;
+            resize: none;
+        }
+
+        .save-btn { 
+            background: var(--rutgers-red); color: white; border: none; 
+            padding: 10px; width: 100%; margin-top: 10px; 
+            border-radius: 8px; cursor: pointer; font-weight: bold;
+            transition: opacity 0.2s;
+        }
+        .save-btn:hover { opacity: 0.8; }
+
+        /* Custom Marker Style */
+        .joy-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .joy-marker:hover { transform: scale(1.2); }
+    </style>
+</head>
+<body>
+
+    <div class="overlay">
+        <h1>🌈 Queering the Banks</h1>
+        <p>A Map of Rutgers Queer Joy</p>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // --- 1. YOUR FIREBASE CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBCz-Qjr8cisMb9Kgalf_VvbGD7YygOK3M",
+            authDomain: "mapsrus.firebaseapp.com",
+            projectId: "mapsrus",
+            storageBucket: "mapsrus.firebasestorage.app",
+            messagingSenderId: "806422201925",
+            appId: "1:806422201925:web:939dad145450239f83c52c",
+            measurementId: "G-9K51Q6FVJZ",
+            // Manually added databaseURL so it knows where to save
+            databaseURL: "https://mapsrus-default-rtdb.firebaseio.com" 
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // --- 2. MAP SETUP ---
+        // Centered on College Ave (Old Queens / Voorhees Mall area)
+        const map = L.map('map', {
+            zoomControl: false // Cleaner look
+        }).setView([40.5000, -74.4474], 16);
+
+        // Add Zoom control to bottom right instead
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        // CartoDB Positron - Grayscale/Clean look so rainbow pins pop!
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // --- 3. LOGIC: CLICK TO DROP PIN ---
+        map.on('click', function(e) {
+            const { lat, lng } = e.latlng;
+            const popupContent = `
+                <div>
+                    <strong style="color:#cc0033">✨ Share a Moment of Joy</strong>
+                    <textarea id="storyInput" placeholder="What happened here? (e.g., first date at Brower, found community at the Pride Center...)"></textarea>
+                    <button class="save-btn" onclick="savePin(${lat}, ${lng})">Add to the Map</button>
+                </div>
+            `;
+            L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
+        });
+
+        function savePin(lat, lng) {
+            const story = document.getElementById('storyInput').value;
+            if (!story.trim()) return alert("Please share a story before posting!");
+
+            database.ref('pins/').push({
+                lat: lat,
+                lng: lng,
+                story: story,
+                timestamp: Date.now()
+            });
+            map.closePopup();
+        }
+
+        // --- 4. LOGIC: LOAD PINS REAL-TIME ---
+        database.ref('pins/').on('child_added', (snapshot) => {
+            const data = snapshot.val();
+            
+            // Random joy emoji for variety
+            const emojis = ['❤️', '🏳️‍🌈', '✨', '🌈', '🌸', '💫'];
+            const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+
+            const joyIcon = L.divIcon({
+                html: `<div class="joy-marker" style="font-size: 28px;">${randomEmoji}</div>`,
+                className: 'custom-div-icon',
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
+
+            L.marker([data.lat, data.lng], { icon: joyIcon })
+                .addTo(map)
+                .bindPopup(`
+                    <div style="text-align:center">
+                        <span style="font-size:0.7rem; color:#888;">${new Date(data.timestamp).toLocaleDateString()}</span><br>
+                        <p style="margin-top:8px; font-size:1rem;">"${data.story}"</p>
+                    </div>
+                `);
+        });
+    </script>
+</body>
+</html>
